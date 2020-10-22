@@ -23,25 +23,12 @@ import sys
 from pathlib import Path
 import logging
 import logging.handlers
-
-#setup logging
-log_file_path = 'ecobee.log'
-days_of_logs_to_keep = 7
-# set to DEBUG, INFO, ERROR, etc
-logging_level = 'DEBUG'
-#ecobee API Key
-APIKey = "YOUR_API_KEY"
-#influxDB info
-influxdb_server = '192.168.1.2'
-influxdb_port = 8086
-influxdb_database = 'ecobee'
-#runtime report time since last report query
-runtime_difference = 60
+import config
 
 #setup logger
 logger = logging.getLogger('ecobee')
-logger.setLevel(getattr(logging, logging_level))
-handler = logging.handlers.TimedRotatingFileHandler(log_file_path, when="d", interval=1,  backupCount=days_of_logs_to_keep)
+logger.setLevel(getattr(logging, config.logging_level))
+handler = logging.handlers.TimedRotatingFileHandler(config.log_file_path, when="d", interval=1,  backupCount=config.days_of_logs_to_keep)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -80,7 +67,7 @@ token_file = str(Path.home()) + '/.ecobee_refresh_token'
 with open(token_file) as f:
     refreshToken = f.readline().replace("\n","")
 
-token_url = "https://api.ecobee.com/token?grant_type=refresh_token&code=" + refreshToken + "&client_id=" + APIKey
+token_url = "https://api.ecobee.com/token?grant_type=refresh_token&code=" + refreshToken + "&client_id=" + config.APIKey
 r = api_request(token_url, 'post')
 
 access_token = r['access_token']
@@ -106,9 +93,9 @@ def logPoint(sensorName=None, thermostatName=None, sensorValue=None, sensorType=
         }
     }
 
-client = InfluxDBClient(host=influxdb_server,
-                        port=influxdb_port,
-                        database=influxdb_database,
+client = InfluxDBClient(host=config.influxdb_server,
+                        port=config.influxdb_port,
+                        database=config.influxdb_database,
                         verify_ssl=False)
 
 
@@ -220,7 +207,7 @@ for thermostat in response['thermostatList']:
     logger.info("last runtime report timestamp from query for " + thermostatName + ": " + response_time_stamp.strftime("%Y-%m-%d %H:%M:%S"))
     logger.debug("difference in minutes: " + str(difference_minutes))
 
-    if runtime_difference < difference_minutes:
+    if config.runtime_difference < difference_minutes:
 
         point_count = 0
 
@@ -269,7 +256,7 @@ for thermostat in response['thermostatList']:
 
         logger.info(str(point_count) + " points written for runtime data from " + thermostatName)
     else:
-        logger.info(thermostatName + " not queried as last query was less than " + str(runtime_difference) + " minutes ago")
+        logger.info(thermostatName + " not queried as last query was less than " + str(config.runtime_difference) + " minutes ago")
 
 logger.info("-----------------------------------")
 client.write_points(points)

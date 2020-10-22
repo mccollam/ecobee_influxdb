@@ -8,5 +8,5 @@
  and follow the instructions to generate an API key, authorize the app with a PIN, and finally
  get a "refresh code"  The refresh code needs to be written to file ~/.ecobee_refresh_token on the first line
 
- you also need to enter your API key in the variables below
+ you also need to enter your API key `config.py`
 
